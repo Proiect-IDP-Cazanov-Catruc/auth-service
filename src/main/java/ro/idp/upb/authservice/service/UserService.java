@@ -1,22 +1,27 @@
 package ro.idp.upb.authservice.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
+import ro.idp.upb.authservice.config.SecurityUtils;
 import ro.idp.upb.authservice.data.dto.request.RegisterRequest;
 import ro.idp.upb.authservice.data.dto.response.UserDto;
 import ro.idp.upb.authservice.data.entity.User;
 import ro.idp.upb.authservice.utils.StaticConstants;
 import ro.idp.upb.authservice.utils.UrlBuilder;
 
+import javax.security.auth.login.LoginException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class UserService {
 
     private final StaticConstants staticConstants;
@@ -38,6 +43,8 @@ public class UserService {
                 params
         );
 
+        log.info("Find user details by user email {} request to IO SERVICE!", email);
+
         String urlTemplate = UriComponentsBuilder.fromHttpUrl(url)
                 .encode()
                 .toUriString();
@@ -49,8 +56,10 @@ public class UserService {
                 UserDto.class
         );
         if (!response.getStatusCode().is2xxSuccessful()) {
+            log.error("Unable to find user details by user email {}!", email);
             return Optional.empty();
         } else {
+            log.info("Successfully fetched user details by user email {}!", email);
             UserDto dtoResponse = response.getBody();
             return Optional.of(userDtoToEntity(dtoResponse));
         }
@@ -82,6 +91,9 @@ public class UserService {
                 params
         );
 
+        log.info("Register user request to IO SERVICE: email {}, firstName {}, lastName {}!",
+                registerRequest.getFirstName(), registerRequest.getLastName(), registerRequest.getEmail());
+
         String urlTemplate = UriComponentsBuilder.fromHttpUrl(url)
                 .encode()
                 .toUriString();
@@ -92,9 +104,27 @@ public class UserService {
                 UserDto.class
         );
         if (!response.getStatusCode().is2xxSuccessful()) {
+            log.error("Unable to register email {}, firstName {}, lastName {}!",
+                    registerRequest.getEmail(), registerRequest.getFirstName(), registerRequest.getLastName());
             return Optional.empty();
         } else {
+            log.info("Successfully registered user with: email {}, firstName {}, lastName {}!",
+                    registerRequest.getEmail(), registerRequest.getFirstName(), registerRequest.getLastName());
             return Optional.of(userDtoToEntity(response.getBody()));
         }
+    }
+
+    public UserDto getUserDto() throws LoginException {
+        final var username = SecurityUtils.getCurrentUserLogin().orElseThrow(LoginException::new);
+        final var user = findByEmail(username).orElseThrow(
+                () -> new UsernameNotFoundException("Username not found!")
+        );
+
+        return UserDto.builder()
+                .email(user.getEmail())
+                .firstName(user.getFirstname())
+                .lastName(user.getLastname())
+                .role(user.getRole())
+                .build();
     }
 }

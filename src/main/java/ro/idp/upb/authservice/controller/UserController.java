@@ -23,17 +23,6 @@ public class UserController {
     @GetMapping("/me")
     @Secured({"ADMIN", "MANAGER"})
     public @ResponseBody UserDto me() throws LoginException {
-        final var username = SecurityUtils.getCurrentUserLogin().orElseThrow(LoginException::new);
-        final var user = userService.findByEmail(username).orElseThrow(
-                () -> new UsernameNotFoundException("Username not found!")
-        );
-
-        final var dto = UserDto.builder()
-                .email(user.getEmail())
-                .firstName(user.getFirstname())
-                        .lastName(user.getLastname())
-                                .role(user.getRole())
-                                        .build();
-        return dto;
+        return userService.getUserDto();
     }
 }

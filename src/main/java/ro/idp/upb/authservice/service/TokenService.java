@@ -1,6 +1,7 @@
 package ro.idp.upb.authservice.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -19,6 +20,7 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TokenService {
     private final StaticConstants staticConstants;
 
@@ -37,6 +39,8 @@ public class TokenService {
         String url = UrlBuilder.replacePlaceholdersInString("${io-service-url}/${tokens-endpoint}/${token-type}/${token}",
                 params);
 
+        log.info("Find by token request to IO SERVICE...");
+
         String urlTemplate = UriComponentsBuilder.fromHttpUrl(
                         url
                 )
@@ -50,8 +54,10 @@ public class TokenService {
                 TokenDto.class
         );
         if (!response.getStatusCode().is2xxSuccessful()) {
+            log.error("Find by token request to IO SERVICE is not 2xx successful!");
             return Optional.empty();
         } else {
+            log.info("Fetched token details by token from IO SERVICE");
             TokenDto dtoResponse = response.getBody();
             TokenDto associatedTokenDtoResponse = dtoResponse.getAssociatedToken();
             Token tokenEntity = Token.builder()
@@ -94,6 +100,8 @@ public class TokenService {
                 "${io-service-url}${tokens-endpoint}/${token-logout}/${token}",
                 params);
 
+        log.info("Token logout request to IO SERVICE!");
+
         String urlTemplate = UriComponentsBuilder.fromHttpUrl(url)
                 .encode()
                 .toUriString();
@@ -131,6 +139,7 @@ public class TokenService {
                 .encode()
                 .toUriString();
 
+        log.info("Save user's {} tokens to IO SERVICE!", user.getId());
 
         return restTemplate.postForEntity(
                 urlTemplate,
@@ -154,6 +163,8 @@ public class TokenService {
         String url = UrlBuilder.replacePlaceholdersInString(
                 "${io-service-url}${tokens-endpoint}${token-revoke-endpoint}/${token}",
                 params);
+
+        log.info("Revoke token request to IO SERVICE!");
 
         String urlTemplate = UriComponentsBuilder.fromHttpUrl(
                         url
@@ -190,6 +201,7 @@ public class TokenService {
                 .encode()
                 .toUriString();
 
+        log.info("Checking if refresh token is actually refresh token!");
 
         ResponseEntity<Boolean> response = restTemplate.exchange(
                 urlTemplate,
