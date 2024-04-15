@@ -66,6 +66,12 @@
             <artifactId>commons-text</artifactId>
             <version>1.11.0</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.diffplug.spotless</groupId>
+            <artifactId>spotless-maven-plugin</artifactId>
+            <version>2.43.0</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -80,6 +86,35 @@
                             <artifactId>lombok</artifactId>
                         </exclude>
                     </excludes>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>com.diffplug.spotless</groupId>
+                <artifactId>spotless-maven-plugin</artifactId>
+                <version>2.43.0</version>
+                <configuration>
+                    <formats>
+                        <format>
+                            <includes>
+                                <include>.gitattributes</include>
+                                <include>.gitignore</include>
+                            </includes>
+                            <trimTrailingWhitespace/>
+                            <endWithNewline/>
+                        </format>
+                    </formats>
+                    <!-- define a language-specific format -->
+                    <java>
+                        <cleanthat />        <!-- has its own section below -->
+
+                        <googleJavaFormat /> <!-- has its own section below -->
+                        <indent><tabs>true</tabs><spacesPerTab>2</spacesPerTab></indent>
+                        <removeUnusedImports /> <!-- self-explanatory -->
+                        <formatAnnotations />  <!-- fixes formatting of type annotations, see below -->
+                        <licenseHeader>
+                            <content>/* Ionel Catruc 343C3, Veaceslav Cazanov 343C3 | IDP AUTH-SERVICE | (C) $YEAR */</content>
+                        </licenseHeader>
+                    </java>
                 </configuration>
             </plugin>
         </plugins>

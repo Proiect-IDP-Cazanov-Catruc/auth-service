@@ -1,3 +1,4 @@
+/* Ionel Catruc 343C3, Veaceslav Cazanov 343C3 | IDP AUTH-SERVICE | (C) 2024 */
 package ro.idp.upb.authservice.config;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,23 +16,20 @@ import ro.idp.upb.authservice.service.TokenService;
 @Slf4j
 public class LogoutService implements LogoutHandler {
 
-    private final TokenService tokenService;
+	private final TokenService tokenService;
 
-    @Override
-    public void logout(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            Authentication authentication
-    ) {
-        log.info("Logout requested!");
-        final String authHeader = request.getHeader("Authorization");
-        final String jwt;
-        if (authHeader == null ||!authHeader.startsWith("Bearer ")) {
-            return;
-        }
-        jwt = authHeader.substring(7);
-        tokenService.handleTokenLogout(jwt);
+	@Override
+	public void logout(
+			HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
+		log.info("Logout requested!");
+		final String authHeader = request.getHeader("Authorization");
+		final String jwt;
+		if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+			return;
+		}
+		jwt = authHeader.substring(7);
+		tokenService.handleTokenLogout(jwt);
 
-        SecurityContextHolder.clearContext();
-    }
+		SecurityContextHolder.clearContext();
+	}
 }
