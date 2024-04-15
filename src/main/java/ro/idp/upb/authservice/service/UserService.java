@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import ro.idp.upb.authservice.config.SecurityUtils;
+import ro.idp.upb.authservice.data.dto.request.AuthenticationRequest;
 import ro.idp.upb.authservice.data.dto.request.RegisterRequest;
 import ro.idp.upb.authservice.data.dto.response.UserDto;
 import ro.idp.upb.authservice.data.entity.User;
@@ -55,6 +56,34 @@ public class UserService {
 			log.info("Successfully fetched user details by user email {}!", email);
 			UserDto dtoResponse = response.getBody();
 			return Optional.of(userDtoToEntity(dtoResponse));
+		}
+	}
+
+	public User isAuthRequestValid(AuthenticationRequest request) {
+		RestTemplate restTemplate = new RestTemplate();
+		HttpHeaders headers = new HttpHeaders();
+		headers.set(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
+		HttpEntity<?> entity = new HttpEntity<>(request, headers);
+
+		Map<String, Object> params = new HashMap<>();
+		params.put("io-service-url", staticConstants.ioServiceUrl);
+		params.put("users-endpoint", staticConstants.usersEndpoint);
+		params.put("validate-login-endpoint", staticConstants.validateLoginEndpoint);
+
+		String url =
+				UrlBuilder.replacePlaceholdersInString(
+						"${io-service-url}${users-endpoint}${validate-login-endpoint}", params);
+
+		log.info("Delegate validate login request for email {} to IO SERVICE!", request.getEmail());
+
+		ResponseEntity<UserDto> response =
+				restTemplate.exchange(url, HttpMethod.POST, entity, UserDto.class);
+		if (!response.getStatusCode().is2xxSuccessful()) {
+			log.error("Invalid credentials for email {}!", request.getEmail());
+			return null;
+		} else {
+			log.info("Login request valid for email {}!", request.getEmail());
+			return userDtoToEntity(response.getBody());
 		}
 	}
 
@@ -117,6 +146,7 @@ public class UserService {
 						.orElseThrow(() -> new UsernameNotFoundException("Username not found!"));
 
 		return UserDto.builder()
+				.id(user.getId())
 				.email(user.getEmail())
 				.firstName(user.getFirstname())
 				.lastName(user.getLastname())

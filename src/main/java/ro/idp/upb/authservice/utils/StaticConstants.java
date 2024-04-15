@@ -11,6 +11,7 @@ public class StaticConstants {
 	public final String usersEndpoint;
 	public final String findByEmailEndpoint;
 	public final String registerEndpoint;
+	public final String validateLoginEndpoint;
 
 	public final String tokensEndpoint;
 	public final String tokenLogoutEndpoint;
@@ -22,6 +23,7 @@ public class StaticConstants {
 			@Value("${idp.io-service.users-endpoint}") String usersEndpoint,
 			@Value("${idp.io-service.find-by-email-endpoint}") String findByEmailEndpoint,
 			@Value("${idp.io-service.register-endpoint}") String registerEndpoint,
+			@Value("${idp.io-service.validate-login-endpoint}") String validateLoginEndpoint,
 			@Value("${idp.io-service.tokens-endpoint}") String tokensEndpoint,
 			@Value("${idp.io-service.token-logout-endpoint}") String tokenLogoutEndpoint,
 			@Value("${idp.io-service.token-revoke-endpoint}") String tokenRevokeEndpoint,
@@ -30,6 +32,7 @@ public class StaticConstants {
 		this.usersEndpoint = usersEndpoint;
 		this.findByEmailEndpoint = findByEmailEndpoint;
 		this.registerEndpoint = registerEndpoint;
+		this.validateLoginEndpoint = validateLoginEndpoint;
 		this.tokensEndpoint = tokensEndpoint;
 		this.tokenLogoutEndpoint = tokenLogoutEndpoint;
 		this.tokenRevokeEndpoint = tokenRevokeEndpoint;

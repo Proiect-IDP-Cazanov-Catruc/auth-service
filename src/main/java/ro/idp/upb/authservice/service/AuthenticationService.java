@@ -43,11 +43,13 @@ public class AuthenticationService {
 
 	public ResponseEntity<?> authenticate(AuthenticationRequest request) {
 		log.info("Authenticate (login) request for user {}!", request.getEmail());
-		var user = userService.findByEmail(request.getEmail()).orElseThrow();
-		ResponseEntity<?> tokensResponse = generateAndSaveTokens(user);
-		if (tokensResponse != null) {
-			log.info("Authentication (login) request for {} done!", request.getEmail());
-			return tokensResponse;
+		User user = userService.isAuthRequestValid(request);
+		if (user != null) {
+			ResponseEntity<?> tokensResponse = generateAndSaveTokens(user);
+			if (tokensResponse != null) {
+				log.info("Authentication (login) request for {} done!", request.getEmail());
+				return tokensResponse;
+			}
 		}
 		log.error("Authentication (login) request for {} went wrong!", request.getEmail());
 		return ResponseEntity.internalServerError().build();

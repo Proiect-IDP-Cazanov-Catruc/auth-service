@@ -45,7 +45,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 		final String userEmail;
 		if (authHeader == null || !authHeader.startsWith("Bearer ")) {
 			filterChain.doFilter(request, response);
-			log.trace("No bearer token prezent in Authorization header!");
+			log.trace("No bearer token present in Authorization header!");
 			return;
 		}
 		jwt = authHeader.substring(7);
