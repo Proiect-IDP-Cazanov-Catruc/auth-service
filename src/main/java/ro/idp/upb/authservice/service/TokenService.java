@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import ro.idp.upb.authservice.data.dto.request.PostTokensDto;
@@ -44,38 +45,38 @@ public class TokenService {
 
 		String urlTemplate = UriComponentsBuilder.fromHttpUrl(url).encode().toUriString();
 
-		ResponseEntity<TokenDto> response =
-				restTemplate.exchange(urlTemplate, HttpMethod.GET, entity, TokenDto.class);
-		if (!response.getStatusCode().is2xxSuccessful()) {
+		ResponseEntity<TokenDto> response;
+		try {
+			response = restTemplate.exchange(urlTemplate, HttpMethod.GET, entity, TokenDto.class);
+		} catch (HttpStatusCodeException e) {
 			log.error("Find by token request to IO SERVICE is not 2xx successful!");
 			return Optional.empty();
-		} else {
-			log.info("Fetched token details by token from IO SERVICE");
-			TokenDto dtoResponse = response.getBody();
-			TokenDto associatedTokenDtoResponse = dtoResponse.getAssociatedToken();
-			Token tokenEntity =
-					Token.builder()
-							.id(dtoResponse.getId())
-							.token(dtoResponse.getToken())
-							.tokenType(dtoResponse.getTokenType())
-							.revoked(dtoResponse.getRevoked())
-							.expired(dtoResponse.getExpired())
-							.userId(dtoResponse.getUserId())
-							.build();
-			Token associatedTokenEntity =
-					Token.builder()
-							.id(associatedTokenDtoResponse.getId())
-							.token(associatedTokenDtoResponse.getToken())
-							.tokenType(associatedTokenDtoResponse.getTokenType())
-							.revoked(associatedTokenDtoResponse.getRevoked())
-							.expired(associatedTokenDtoResponse.getExpired())
-							.userId(associatedTokenDtoResponse.getUserId())
-							.build();
-
-			tokenEntity.setAssociatedToken(associatedTokenEntity);
-
-			return Optional.of(tokenEntity);
 		}
+		log.info("Fetched token details by token from IO SERVICE");
+		TokenDto dtoResponse = response.getBody();
+		TokenDto associatedTokenDtoResponse = dtoResponse.getAssociatedToken();
+		Token tokenEntity =
+				Token.builder()
+						.id(dtoResponse.getId())
+						.token(dtoResponse.getToken())
+						.tokenType(dtoResponse.getTokenType())
+						.revoked(dtoResponse.getRevoked())
+						.expired(dtoResponse.getExpired())
+						.userId(dtoResponse.getUserId())
+						.build();
+		Token associatedTokenEntity =
+				Token.builder()
+						.id(associatedTokenDtoResponse.getId())
+						.token(associatedTokenDtoResponse.getToken())
+						.tokenType(associatedTokenDtoResponse.getTokenType())
+						.revoked(associatedTokenDtoResponse.getRevoked())
+						.expired(associatedTokenDtoResponse.getExpired())
+						.userId(associatedTokenDtoResponse.getUserId())
+						.build();
+
+		tokenEntity.setAssociatedToken(associatedTokenEntity);
+
+		return Optional.of(tokenEntity);
 	}
 
 	public void handleTokenLogout(String jwt) {
@@ -123,8 +124,14 @@ public class TokenService {
 		String urlTemplate = UriComponentsBuilder.fromHttpUrl(url).encode().toUriString();
 
 		log.info("Save user's {} tokens to IO SERVICE!", user.getId());
-
-		return restTemplate.postForEntity(urlTemplate, entity, Object.class);
+		try {
+			return restTemplate.exchange(urlTemplate, HttpMethod.GET, entity, TokenDto.class);
+		} catch (HttpStatusCodeException e) {
+			log.error("Find by token request to IO SERVICE is not 2xx successful!");
+			return ResponseEntity.status(e.getStatusCode())
+					.headers(e.getResponseHeaders())
+					.body(e.getResponseBodyAsString());
+		}
 	}
 
 	public void revokeToken(String jwtToken) {
@@ -170,9 +177,12 @@ public class TokenService {
 
 		log.info("Checking if refresh token is actually refresh token!");
 
-		ResponseEntity<Boolean> response =
-				restTemplate.exchange(urlTemplate, HttpMethod.GET, entity, Boolean.class);
-
-		return Boolean.TRUE.equals(response.getBody());
+		try {
+			ResponseEntity<Boolean> response =
+					restTemplate.exchange(urlTemplate, HttpMethod.GET, entity, Boolean.class);
+			return Boolean.TRUE.equals(response.getBody());
+		} catch (HttpStatusCodeException e) {
+			return false;
+		}
 	}
 }

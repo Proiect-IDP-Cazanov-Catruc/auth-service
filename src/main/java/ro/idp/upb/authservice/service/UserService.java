@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import ro.idp.upb.authservice.config.SecurityUtils;
@@ -47,16 +48,18 @@ public class UserService {
 
 		String urlTemplate = UriComponentsBuilder.fromHttpUrl(url).encode().toUriString();
 
-		ResponseEntity<UserDto> response =
-				restTemplate.exchange(urlTemplate, HttpMethod.GET, entity, UserDto.class);
-		if (!response.getStatusCode().is2xxSuccessful()) {
+		ResponseEntity<UserDto> response;
+
+		try {
+			response = restTemplate.exchange(urlTemplate, HttpMethod.GET, entity, UserDto.class);
+		} catch (HttpStatusCodeException e) {
 			log.error("Unable to find user details by user email {}!", email);
 			return Optional.empty();
-		} else {
-			log.info("Successfully fetched user details by user email {}!", email);
-			UserDto dtoResponse = response.getBody();
-			return Optional.of(userDtoToEntity(dtoResponse));
 		}
+
+		log.info("Successfully fetched user details by user email {}!", email);
+		UserDto dtoResponse = response.getBody();
+		return Optional.of(userDtoToEntity(dtoResponse));
 	}
 
 	public User isAuthRequestValid(AuthenticationRequest request) {
@@ -76,15 +79,15 @@ public class UserService {
 
 		log.info("Delegate validate login request for email {} to IO SERVICE!", request.getEmail());
 
-		ResponseEntity<UserDto> response =
-				restTemplate.exchange(url, HttpMethod.POST, entity, UserDto.class);
-		if (!response.getStatusCode().is2xxSuccessful()) {
+		ResponseEntity<UserDto> response;
+		try {
+			response = restTemplate.exchange(url, HttpMethod.POST, entity, UserDto.class);
+		} catch (HttpStatusCodeException e) {
 			log.error("Invalid credentials for email {}!", request.getEmail());
 			return null;
-		} else {
-			log.info("Login request valid for email {}!", request.getEmail());
-			return userDtoToEntity(response.getBody());
 		}
+		log.info("Login request valid for email {}!", request.getEmail());
+		return userDtoToEntity(response.getBody());
 	}
 
 	public User userDtoToEntity(UserDto userDto) {
@@ -120,23 +123,25 @@ public class UserService {
 
 		String urlTemplate = UriComponentsBuilder.fromHttpUrl(url).encode().toUriString();
 
-		ResponseEntity<UserDto> response =
-				restTemplate.postForEntity(urlTemplate, entity, UserDto.class);
-		if (!response.getStatusCode().is2xxSuccessful()) {
+		ResponseEntity<UserDto> response;
+
+		try {
+			response = restTemplate.postForEntity(urlTemplate, entity, UserDto.class);
+		} catch (HttpStatusCodeException e) {
 			log.error(
 					"Unable to register email {}, firstName {}, lastName {}!",
 					registerRequest.getEmail(),
 					registerRequest.getFirstName(),
 					registerRequest.getLastName());
 			return Optional.empty();
-		} else {
-			log.info(
-					"Successfully registered user with: email {}, firstName {}, lastName {}!",
-					registerRequest.getEmail(),
-					registerRequest.getFirstName(),
-					registerRequest.getLastName());
-			return Optional.of(userDtoToEntity(response.getBody()));
 		}
+
+		log.info(
+				"Successfully registered user with: email {}, firstName {}, lastName {}!",
+				registerRequest.getEmail(),
+				registerRequest.getFirstName(),
+				registerRequest.getLastName());
+		return Optional.of(userDtoToEntity(response.getBody()));
 	}
 
 	public UserDto getUserDto() throws LoginException {
