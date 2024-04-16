@@ -125,7 +125,7 @@ public class TokenService {
 
 		log.info("Save user's {} tokens to IO SERVICE!", user.getId());
 		try {
-			return restTemplate.exchange(urlTemplate, HttpMethod.GET, entity, TokenDto.class);
+			return restTemplate.exchange(urlTemplate, HttpMethod.POST, entity, TokenDto.class);
 		} catch (HttpStatusCodeException e) {
 			log.error("Find by token request to IO SERVICE is not 2xx successful!");
 			return ResponseEntity.status(e.getStatusCode())
