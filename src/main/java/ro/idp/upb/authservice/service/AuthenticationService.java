@@ -24,20 +24,28 @@ public class AuthenticationService {
 
 	public ResponseEntity<?> register(RegisterRequest request) {
 		log.info(
-				"Register request! email {} firstName{} lastName {}!",
-				request.getEmail(),
+				"Register request! [Firstname: {}], [Lastname: {}], [Email: {}]!",
 				request.getFirstName(),
-				request.getLastName());
+				request.getLastName(),
+				request.getEmail());
 		var savedUser = userService.registerUser(request);
 		if (savedUser.isPresent()) {
 			User user = savedUser.get();
 			ResponseEntity<?> tokensResponse = generateAndSaveTokens(user);
 			if (tokensResponse != null) {
-				log.info("Register request for {} done!", request.getEmail());
+				log.info(
+						"Register request for [Firstname: {}], [Lastname: {}], [Email: {}]! done!",
+						request.getFirstName(),
+						request.getLastName(),
+						request.getEmail());
 				return tokensResponse;
 			}
 		}
-		log.error("Register request for {} went wrong!", request.getEmail());
+		log.error(
+				"Register request for [Firstname: {}], [Lastname: {}], [Email: {}] went wrong!",
+				request.getFirstName(),
+				request.getLastName(),
+				request.getEmail());
 		return ResponseEntity.internalServerError().build();
 	}
 
