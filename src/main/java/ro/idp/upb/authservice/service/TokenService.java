@@ -1,6 +1,7 @@
 /* Ionel Catruc 343C3, Veaceslav Cazanov 343C3 | IDP AUTH-SERVICE | (C) 2024 */
 package ro.idp.upb.authservice.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -8,7 +9,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import ro.idp.upb.authservice.data.dto.request.PostTokensDto;
@@ -16,6 +16,7 @@ import ro.idp.upb.authservice.data.dto.response.TokenDto;
 import ro.idp.upb.authservice.data.entity.Token;
 import ro.idp.upb.authservice.data.entity.User;
 import ro.idp.upb.authservice.data.enums.TokenType;
+import ro.idp.upb.authservice.exception.handle.RestTemplateResponseErrorHandler;
 import ro.idp.upb.authservice.utils.StaticConstants;
 import ro.idp.upb.authservice.utils.UrlBuilder;
 
@@ -24,9 +25,14 @@ import ro.idp.upb.authservice.utils.UrlBuilder;
 @Slf4j
 public class TokenService {
 	private final StaticConstants staticConstants;
+	private final ObjectMapper objectMapper;
 
 	public Optional<Token> findByToken(String token, TokenType tokenType) {
 		RestTemplate restTemplate = new RestTemplate();
+		restTemplate.setErrorHandler(
+				new RestTemplateResponseErrorHandler(
+						objectMapper,
+						() -> log.error("Find by token request to IO SERVICE is not 2xx successful!")));
 		HttpHeaders headers = new HttpHeaders();
 		headers.set(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
 		HttpEntity<?> entity = new HttpEntity<>(headers);
@@ -46,12 +52,7 @@ public class TokenService {
 		String urlTemplate = UriComponentsBuilder.fromHttpUrl(url).encode().toUriString();
 
 		ResponseEntity<TokenDto> response;
-		try {
-			response = restTemplate.exchange(urlTemplate, HttpMethod.GET, entity, TokenDto.class);
-		} catch (HttpStatusCodeException e) {
-			log.error("Find by token request to IO SERVICE is not 2xx successful!");
-			return Optional.empty();
-		}
+		response = restTemplate.exchange(urlTemplate, HttpMethod.GET, entity, TokenDto.class);
 		log.info("Fetched token details by token from IO SERVICE");
 		TokenDto dtoResponse = response.getBody();
 		TokenDto associatedTokenDtoResponse = dtoResponse.getAssociatedToken();
@@ -102,7 +103,7 @@ public class TokenService {
 		restTemplate.exchange(urlTemplate, HttpMethod.POST, entity, Void.class);
 	}
 
-	public ResponseEntity<?> saveUserTokens(User user, String jwtToken, String refreshToken) {
+	public void saveUserTokens(User user, String jwtToken, String refreshToken) {
 		PostTokensDto dto =
 				PostTokensDto.builder()
 						.accessToken(jwtToken)
@@ -111,6 +112,10 @@ public class TokenService {
 						.build();
 
 		RestTemplate restTemplate = new RestTemplate();
+		restTemplate.setErrorHandler(
+				new RestTemplateResponseErrorHandler(
+						objectMapper,
+						() -> log.error("Unable to save user tokens for user {}!", user.getId())));
 		HttpHeaders headers = new HttpHeaders();
 		headers.set(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
 		HttpEntity<?> entity = new HttpEntity<>(dto, headers);
@@ -124,18 +129,14 @@ public class TokenService {
 		String urlTemplate = UriComponentsBuilder.fromHttpUrl(url).encode().toUriString();
 
 		log.info("Save user's {} tokens to IO SERVICE!", user.getId());
-		try {
-			return restTemplate.exchange(urlTemplate, HttpMethod.POST, entity, TokenDto.class);
-		} catch (HttpStatusCodeException e) {
-			log.error("Find by token request to IO SERVICE is not 2xx successful!");
-			return ResponseEntity.status(e.getStatusCode())
-					.headers(e.getResponseHeaders())
-					.body(e.getResponseBodyAsString());
-		}
+		restTemplate.exchange(urlTemplate, HttpMethod.POST, entity, TokenDto.class).getBody();
 	}
 
 	public void revokeToken(String jwtToken) {
 		RestTemplate restTemplate = new RestTemplate();
+		restTemplate.setErrorHandler(
+				new RestTemplateResponseErrorHandler(
+						objectMapper, () -> log.error("Token revocation on IO service went wrong!")));
 		HttpHeaders headers = new HttpHeaders();
 		headers.set(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
 		HttpEntity<?> entity = new HttpEntity<>(headers);
@@ -159,6 +160,9 @@ public class TokenService {
 
 	public boolean isRefreshToken(String refreshToken) {
 		RestTemplate restTemplate = new RestTemplate();
+		restTemplate.setErrorHandler(
+				new RestTemplateResponseErrorHandler(
+						objectMapper, () -> log.error("Token refresh check on IO service went wrong!")));
 		HttpHeaders headers = new HttpHeaders();
 		headers.set(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
 		HttpEntity<?> entity = new HttpEntity<>(headers);
@@ -176,13 +180,8 @@ public class TokenService {
 		String urlTemplate = UriComponentsBuilder.fromHttpUrl(url).encode().toUriString();
 
 		log.info("Checking if refresh token is actually refresh token!");
-
-		try {
-			ResponseEntity<Boolean> response =
-					restTemplate.exchange(urlTemplate, HttpMethod.GET, entity, Boolean.class);
-			return Boolean.TRUE.equals(response.getBody());
-		} catch (HttpStatusCodeException e) {
-			return false;
-		}
+		ResponseEntity<Boolean> response =
+				restTemplate.exchange(urlTemplate, HttpMethod.GET, entity, Boolean.class);
+		return Boolean.TRUE.equals(response.getBody());
 	}
 }

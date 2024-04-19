@@ -1,16 +1,13 @@
 /* Ionel Catruc 343C3, Veaceslav Cazanov 343C3 | IDP AUTH-SERVICE | (C) 2024 */
 package ro.idp.upb.authservice.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
-import javax.security.auth.login.LoginException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import ro.idp.upb.authservice.config.SecurityUtils;
@@ -18,6 +15,8 @@ import ro.idp.upb.authservice.data.dto.request.AuthenticationRequest;
 import ro.idp.upb.authservice.data.dto.request.RegisterRequest;
 import ro.idp.upb.authservice.data.dto.response.UserDto;
 import ro.idp.upb.authservice.data.entity.User;
+import ro.idp.upb.authservice.exception.SecurityContextUsernameException;
+import ro.idp.upb.authservice.exception.handle.RestTemplateResponseErrorHandler;
 import ro.idp.upb.authservice.utils.StaticConstants;
 import ro.idp.upb.authservice.utils.UrlBuilder;
 
@@ -27,9 +26,13 @@ import ro.idp.upb.authservice.utils.UrlBuilder;
 public class UserService {
 
 	private final StaticConstants staticConstants;
+	private final ObjectMapper objectMapper;
 
-	public Optional<User> findByEmail(String email) {
+	public User findByEmail(String email) {
 		RestTemplate restTemplate = new RestTemplate();
+		restTemplate.setErrorHandler(
+				new RestTemplateResponseErrorHandler(
+						objectMapper, () -> log.error("Unable to find user details by user email {}!", email)));
 		HttpHeaders headers = new HttpHeaders();
 		headers.set(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
 		HttpEntity<?> entity = new HttpEntity<>(headers);
@@ -49,21 +52,19 @@ public class UserService {
 		String urlTemplate = UriComponentsBuilder.fromHttpUrl(url).encode().toUriString();
 
 		ResponseEntity<UserDto> response;
-
-		try {
-			response = restTemplate.exchange(urlTemplate, HttpMethod.GET, entity, UserDto.class);
-		} catch (HttpStatusCodeException e) {
-			log.error("Unable to find user details by user email {}!", email);
-			return Optional.empty();
-		}
+		response = restTemplate.exchange(urlTemplate, HttpMethod.GET, entity, UserDto.class);
 
 		log.info("Successfully fetched user details by user email {}!", email);
 		UserDto dtoResponse = response.getBody();
-		return Optional.of(userDtoToEntity(dtoResponse));
+		return userDtoToEntity(dtoResponse);
 	}
 
 	public User isAuthRequestValid(AuthenticationRequest request) {
 		RestTemplate restTemplate = new RestTemplate();
+		restTemplate.setErrorHandler(
+				new RestTemplateResponseErrorHandler(
+						objectMapper,
+						() -> log.error("Invalid credentials for email {}!", request.getEmail())));
 		HttpHeaders headers = new HttpHeaders();
 		headers.set(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
 		HttpEntity<?> entity = new HttpEntity<>(request, headers);
@@ -80,12 +81,7 @@ public class UserService {
 		log.info("Delegate validate login request for email {} to IO SERVICE!", request.getEmail());
 
 		ResponseEntity<UserDto> response;
-		try {
-			response = restTemplate.exchange(url, HttpMethod.POST, entity, UserDto.class);
-		} catch (HttpStatusCodeException e) {
-			log.error("Invalid credentials for email {}!", request.getEmail());
-			return null;
-		}
+		response = restTemplate.exchange(url, HttpMethod.POST, entity, UserDto.class);
 		log.info("Login request valid for email {}!", request.getEmail());
 		return userDtoToEntity(response.getBody());
 	}
@@ -100,8 +96,17 @@ public class UserService {
 				.build();
 	}
 
-	public Optional<User> registerUser(RegisterRequest registerRequest) {
+	public User registerUser(RegisterRequest registerRequest) {
 		RestTemplate restTemplate = new RestTemplate();
+		restTemplate.setErrorHandler(
+				new RestTemplateResponseErrorHandler(
+						objectMapper,
+						() ->
+								log.error(
+										"Register request for [Firstname: {}], [Lastname: {}], [Email: {}] went wrong!",
+										registerRequest.getFirstName(),
+										registerRequest.getLastName(),
+										registerRequest.getEmail())));
 		HttpHeaders headers = new HttpHeaders();
 		headers.set(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
 		HttpEntity<?> entity = new HttpEntity<>(registerRequest, headers);
@@ -116,7 +121,7 @@ public class UserService {
 						"${io-service-url}${users-endpoint}${register-endpoint}", params);
 
 		log.info(
-				"Register user request to IO SERVICE: email {}, firstName {}, lastName {}!",
+				"Register user request to IO SERVICE [Firstname: {}], [Lastname: {}], [Email: {}]!",
 				registerRequest.getFirstName(),
 				registerRequest.getLastName(),
 				registerRequest.getEmail());
@@ -125,30 +130,20 @@ public class UserService {
 
 		ResponseEntity<UserDto> response;
 
-		try {
-			response = restTemplate.postForEntity(urlTemplate, entity, UserDto.class);
-		} catch (HttpStatusCodeException e) {
-			log.error(
-					"Unable to register email {}, firstName {}, lastName {}!",
-					registerRequest.getEmail(),
-					registerRequest.getFirstName(),
-					registerRequest.getLastName());
-			return Optional.empty();
-		}
+		response = restTemplate.postForEntity(urlTemplate, entity, UserDto.class);
 
 		log.info(
-				"Successfully registered user with: email {}, firstName {}, lastName {}!",
-				registerRequest.getEmail(),
+				"Successfully registered user [Firstname: {}], [Lastname: {}], [Email: {}]!",
 				registerRequest.getFirstName(),
-				registerRequest.getLastName());
-		return Optional.of(userDtoToEntity(response.getBody()));
+				registerRequest.getLastName(),
+				registerRequest.getEmail());
+		return userDtoToEntity(response.getBody());
 	}
 
-	public UserDto getUserDto() throws LoginException {
-		final var username = SecurityUtils.getCurrentUserLogin().orElseThrow(LoginException::new);
-		final var user =
-				findByEmail(username)
-						.orElseThrow(() -> new UsernameNotFoundException("Username not found!"));
+	public UserDto getUserDto() {
+		final var username =
+				SecurityUtils.getCurrentUserLogin().orElseThrow(SecurityContextUsernameException::new);
+		final var user = findByEmail(username);
 
 		return UserDto.builder()
 				.id(user.getId())
