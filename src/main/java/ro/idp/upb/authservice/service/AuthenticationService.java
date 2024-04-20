@@ -13,7 +13,7 @@ import ro.idp.upb.authservice.data.dto.response.AuthenticationResponse;
 import ro.idp.upb.authservice.data.entity.User;
 import ro.idp.upb.authservice.exception.InvalidTokenException;
 import ro.idp.upb.authservice.exception.NotRefreshTokenException;
-import ro.idp.upb.authservice.exception.handle.MissingTokenException;
+import ro.idp.upb.authservice.exception.MissingTokenException;
 
 @Service
 @RequiredArgsConstructor

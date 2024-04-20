@@ -8,10 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import ro.idp.upb.authservice.exception.InvalidTokenException;
-import ro.idp.upb.authservice.exception.NotRefreshTokenException;
-import ro.idp.upb.authservice.exception.RestTemplateException;
-import ro.idp.upb.authservice.exception.SecurityContextUsernameException;
+import ro.idp.upb.authservice.exception.*;
 
 @ControllerAdvice
 public class ExceptionHandling {
