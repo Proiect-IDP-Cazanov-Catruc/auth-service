@@ -14,6 +14,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.logout.LogoutHandler;
+import org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -26,6 +27,8 @@ public class SecurityConfig {
 	private final AuthenticationProvider authenticationProvider;
 	private final LogoutHandler logoutHandler;
 
+	private final ExceptionHandlerFilter exceptionHandlerFilter;
+
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		http.csrf(AbstractHttpConfigurer::disable)
@@ -35,6 +38,7 @@ public class SecurityConfig {
 						session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authenticationProvider(authenticationProvider)
 				.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+				.addFilterAt(exceptionHandlerFilter, WebAsyncManagerIntegrationFilter.class)
 				.logout(
 						logout ->
 								logout
@@ -43,6 +47,7 @@ public class SecurityConfig {
 										.logoutSuccessHandler(
 												(request, response, authentication) ->
 														SecurityContextHolder.clearContext()));
+
 		return http.build();
 	}
 }

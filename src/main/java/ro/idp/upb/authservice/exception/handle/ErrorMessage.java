@@ -28,19 +28,19 @@ public class ErrorMessage implements Serializable {
 		timestamp = LocalDateTime.now();
 	}
 
-	ErrorMessage(HttpStatus status) {
+	public ErrorMessage(HttpStatus status) {
 		this();
 		this.status = status.value();
 	}
 
-	ErrorMessage(HttpStatus status, Throwable ex) {
+	public ErrorMessage(HttpStatus status, Throwable ex) {
 		this();
 		this.status = status.value();
 		this.errorCode = ErrorCode.E_001;
 		this.debugMessage = ex.getLocalizedMessage();
 	}
 
-	ErrorMessage(HttpStatus status, ErrorCode errorCode, Throwable ex) {
+	public ErrorMessage(HttpStatus status, ErrorCode errorCode, Throwable ex) {
 		this();
 		this.status = status.value();
 		this.errorCode = errorCode;

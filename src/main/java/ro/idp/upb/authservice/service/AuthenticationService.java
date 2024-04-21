@@ -12,8 +12,8 @@ import ro.idp.upb.authservice.data.dto.request.RegisterRequest;
 import ro.idp.upb.authservice.data.dto.response.AuthenticationResponse;
 import ro.idp.upb.authservice.data.entity.User;
 import ro.idp.upb.authservice.exception.InvalidTokenException;
-import ro.idp.upb.authservice.exception.NotRefreshTokenException;
 import ro.idp.upb.authservice.exception.MissingTokenException;
+import ro.idp.upb.authservice.exception.NotRefreshTokenException;
 import ro.idp.upb.authservice.utils.StringUtils;
 
 @Service
@@ -81,7 +81,9 @@ public class AuthenticationService {
 					log.info("Refresh token request is done for user {}!", user.getId());
 					return tokensResponse;
 				}
-				log.error("Token refresh provided token {} is not valid", StringUtils.truncateString(refreshToken));
+				log.error(
+						"Token refresh provided token {} is not valid",
+						StringUtils.truncateString(refreshToken));
 				throw new NotRefreshTokenException(refreshToken);
 			}
 			log.error("Token refresh for user {} went wrong!", user.getId());
