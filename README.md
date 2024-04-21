@@ -53,7 +53,7 @@ You can look at .env file.
 - IO_SERVICE_TOKENS_ENDPOINT=`/api/v1/tokens`
 - IO_SERVICE_TOKENS_LOGOUT=`/logout`
 - IO_SERVICE_TOKENS_REVOKE=`/revoke` 
-- IO_SERVICE_TOKENS_IS_REFRESH=`/is_refresh`
+- IO_SERVICE_TOKENS_IS_REFRESH=`/is-refresh`
 
 ## Errors handling
 In case of an error occurred on the service, a message of type ErrorMessage will be returned, which contains:
