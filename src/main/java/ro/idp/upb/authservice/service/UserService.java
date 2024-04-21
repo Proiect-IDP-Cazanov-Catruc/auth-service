@@ -15,7 +15,6 @@ import ro.idp.upb.authservice.data.dto.request.AuthenticationRequest;
 import ro.idp.upb.authservice.data.dto.request.RegisterRequest;
 import ro.idp.upb.authservice.data.dto.response.UserDto;
 import ro.idp.upb.authservice.data.entity.User;
-import ro.idp.upb.authservice.exception.SecurityContextUsernameException;
 import ro.idp.upb.authservice.exception.handle.RestTemplateResponseErrorHandler;
 import ro.idp.upb.authservice.utils.StaticConstants;
 import ro.idp.upb.authservice.utils.UrlBuilder;
@@ -141,8 +140,7 @@ public class UserService {
 	}
 
 	public UserDto getUserDto() {
-		final var username =
-				SecurityUtils.getCurrentUserLogin().orElseThrow(SecurityContextUsernameException::new);
+		final var username = SecurityUtils.getCurrentUserLogin();
 		final var user = findByEmail(username);
 
 		return UserDto.builder()
