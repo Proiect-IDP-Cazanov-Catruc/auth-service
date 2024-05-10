@@ -22,7 +22,17 @@ import org.springframework.security.web.context.request.async.WebAsyncManagerInt
 @EnableMethodSecurity(securedEnabled = true)
 public class SecurityConfig {
 
-	private static final String[] WHITE_LIST_URL = {"/api/v1/auth/**", "/error"};
+	private static final String[] WHITE_LIST_URL = {
+		"/api/v1/auth/**",
+		"/error",
+		"/prometheus/**",
+		"/metrics/**",
+		"/info/**",
+		"/health/**",
+		"/shutdown/**",
+		"/beans/**",
+		"/actuator/**"
+	};
 	private final JwtAuthenticationFilter jwtAuthFilter;
 	private final AuthenticationProvider authenticationProvider;
 	private final LogoutHandler logoutHandler;
