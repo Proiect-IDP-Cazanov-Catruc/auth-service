@@ -1,4 +1,4 @@
-name: Publish Docker image
+name: Push changes to remote
 
 on:
   push:
@@ -25,3 +25,16 @@ jobs:
           context: .
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/idp-proiect-auth-service:${{ github.sha }} , ${{ secrets.DOCKERHUB_USERNAME }}/idp-proiect-auth-service:latest
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      
+      - uses: azure/aks-set-context@v3
+        with:
+          resource-group: idp-resource-group
+          cluster-name: idp-cluster
+
+      - name: Rollout
+        run: kubectl rollout restart -n idp deployments/auth-deployment
